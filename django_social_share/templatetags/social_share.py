@@ -54,13 +54,14 @@ def _build_url(request, obj_or_url):
     return ''
 
 
-def _compose_tweet(text, url=None):
-    TWITTER_MAX_NUMBER_OF_CHARACTERS = 140
+def _compose_tweet(text, url=None, via=None):
+    TWITTER_MAX_NUMBER_OF_CHARACTERS = 280
     TWITTER_LINK_LENGTH = 23  # "A URL of any length will be altered to 23 characters, even if the link itself is less than 23 characters long.
 
     # Compute length of the tweet
     url_length = len(' ') + TWITTER_LINK_LENGTH if url else 0
-    total_length = len(text) + url_length
+    via_length = len(' ') + 'via @' + via if via else 0
+    total_length = len(text) + url_length + via_length
 
     # Check that the text respects the max number of characters for a tweet
     if total_length > TWITTER_MAX_NUMBER_OF_CHARACTERS:
@@ -70,20 +71,20 @@ def _compose_tweet(text, url=None):
 
 
 @register.simple_tag(takes_context=True)
-def post_to_twitter_url(context, text, obj_or_url=None):
+def post_to_twitter_url(context, text, obj_or_url=None, via=None):
     text = compile_text(context, text)
     request = context['request']
 
     url = _build_url(request, obj_or_url)
 
-    tweet = _compose_tweet(text, url)
+    tweet = _compose_tweet(text, url, via)
     context['tweet_url'] = TWITTER_ENDPOINT % urlencode(tweet)
     return context
 
 
 @register.inclusion_tag('django_social_share/templatetags/post_to_twitter.html', takes_context=True)
-def post_to_twitter(context, text, obj_or_url=None, link_text='Post to Twitter'):
-    context = post_to_twitter_url(context, text, obj_or_url)
+def post_to_twitter(context, text, obj_or_url=None, link_text='Post to Twitter', via=None):
+    context = post_to_twitter_url(context, text, obj_or_url, via)
 
     request = context['request']
     url = _build_url(request, obj_or_url)
